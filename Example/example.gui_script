@@ -1,0 +1,105 @@
+--====================================================================
+local defUDP = require "example.defUDP"
+--====================================================================
+-- note : callback function 
+-- function(data, ip, port) print("Received data", data, ip, port) end
+--====================================================================
+local function createUDP_Server( targetPortNum,callbackFunc )
+    --================================================================
+    local server =  defUDP.create( callbackFunc
+                  , targetPortNum
+                  , nil   -- non use peer 
+                  , nil ) -- non use 
+    --================================================================
+    return server
+end
+--====================================================================
+local function createUDP_Client( targetHostStr,targetPortNum,callbackFunc)
+    --================================================================
+    local cFunc  = callbackFunc or function (data,ip,port) end
+    local client = defUDP.create( cFunc          -- 
+                                , nil            -- non use 
+                                , targetHostStr
+                                , targetPortNum
+                                );
+    --================================================================
+    return client 
+end
+--====================================================================
+
+-- 
+--====================================================================
+function init(self)
+    --================================================================
+    msg.post(".", "acquire_input_focus")
+    --================================================================
+    self.targetHost = "localhost" --  test your host --
+    self.targetPort = 9001
+    --================================================================
+    
+    -- if you want to use as server( recive OSC message )
+    --================================================================
+    -- self.udp_server = createUDP_Server( 
+    --       self.targetPort
+    --     , function( data , ipOfSender, portOfSender)
+    --         --========================================================
+    --         local msg = TinyOSC.Message_create();
+    --         TinyOSC.Message_parseMessage(msg,data,#data);
+    --         --========================================================
+    --         print("Received data : ", data, ipOfSender, portOfSender )
+    --         print(TinyOSC.Message_getPrintMessage( msg ,true) )
+    --         --========================================================
+    --         local format = TinyOSC.Message_getFormat( msg)
+    --         if( format =="m")
+    --         then 
+    --            len,a,b,c,d,e = TinyOSC.Message_getNextMidi (msg)
+    --            print( "tet buf " .. len, tostring(a),tostring(b),tostring(c),tostring(d),e )
+    --         end
+    --         --========================================================
+    --         TinyOSC.Message_delete( msg )
+    --         --========================================================
+    --     end )
+    --================================================================
+    self.udp_client = createUDP_Client( self.targetHost
+                                      , self.targetPort );
+    --================================================================
+end
+--====================================================================
+function final(self) 
+    -- self.udp_server.destroy() -- if you want it.
+    self.udp_client.destroy()
+end
+--====================================================================
+function update(self, dt)
+    --================================================================
+    -- self.udp_server.update() -- if you want it.
+    self.udp_client.update()
+end
+--====================================================================
+function on_input(self, action_id, action)
+    --================================================================
+    if( action.pressed == true )
+    then 
+        --============================================================
+        -- test for midi 
+        local len,socketBuf = TinyOSC.create_OSCMessage_SocketBuffer(  "/kawaTest/rotaryknob" -- target Addres
+                                                                     ,  "m"                    -- target format (this format midi )
+                                                                     ,  string.char( "0x90" )  -- first byte
+                                                                     .. string.char( "0x64" )  -- second byte
+                                                                     .. string.char( "0x30" )  -- third byte
+                                                                     .. string.char( "0x00" )  -- 4th byte 
+                                                                     )
+        --============================================================
+        self.udp_client.send(socketBuf)
+        --============================================================
+        len,socketBuf = TinyOSC.create_OSCMessage_SocketBuffer( "/kawaTest/parameter_01" -- target Addres
+                                                              , "f"                      -- format
+                                                              , math.random()            -- send Random Number(), for test
+                                                              );
+        --============================================================
+        self.udp_client.send(socketBuf)
+        --============================================================
+    end
+    --================================================================
+end
+--====================================================================

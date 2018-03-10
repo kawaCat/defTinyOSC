@@ -1,0 +1,21 @@
+[project]
+title = defTinyOsc
+dependencies = 
+compress_archive = 0
+
+[bootstrap]
+main_collection = /example/example.collectionc
+
+[script]
+shared_state = 1
+
+[osx]
+bundle_identifier = com.kawa.defTinyOSC
+
+[android]
+package = com.kawa.defTinyOSC
+
+[display]
+width = 300
+height = 300
+
